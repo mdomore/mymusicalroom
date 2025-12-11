@@ -25,6 +25,7 @@ interface ResourceListProps {
   onResourceUpdated: () => void
   onResourceDeleted: () => void
   onReorder: (orders: Record<number, number>) => void
+  isAuthenticated?: boolean
 }
 
 export function ResourceList({
@@ -33,6 +34,7 @@ export function ResourceList({
   onResourceUpdated,
   onResourceDeleted,
   onReorder,
+  isAuthenticated = false,
 }: ResourceListProps) {
   const [items, setItems] = useState(resources)
 
@@ -48,6 +50,8 @@ export function ResourceList({
   )
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!isAuthenticated) return
+    
     const { active, over } = event
 
     if (over && active.id !== over.id) {
@@ -95,6 +99,7 @@ export function ResourceList({
               pageId={pageId}
               onUpdated={onResourceUpdated}
               onDeleted={onResourceDeleted}
+              isAuthenticated={isAuthenticated}
             />
           ))}
         </div>

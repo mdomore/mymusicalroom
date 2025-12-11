@@ -25,9 +25,10 @@ interface ResourceItemProps {
   pageId: number
   onUpdated: () => void
   onDeleted: () => void
+  isAuthenticated?: boolean
 }
 
-export function ResourceItem({ resource, pageId, onUpdated, onDeleted }: ResourceItemProps) {
+export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthenticated = false }: ResourceItemProps) {
   const [isExpanded, setIsExpanded] = useState(resource.is_expanded)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [title, setTitle] = useState(resource.title)
@@ -98,15 +99,15 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted }: Resourc
         
         if (videoId) {
           return (
-            <iframe
-              width="100%"
-              height="400"
-              src={`https://www.youtube.com/embed/${videoId}`}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="rounded-md"
-            />
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full rounded-md"
+              />
+            </div>
           )
         }
       }
@@ -126,12 +127,12 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted }: Resourc
       
       if (resource.resource_type === 'video') {
         return (
-          <video controls className="w-full rounded-md" src={fileUrl}>
+          <video controls className="w-full h-auto -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md max-h-[70vh]" src={fileUrl}>
             Your browser does not support the video tag.
           </video>
         )
       } else if (resource.resource_type === 'photo') {
-        return <img src={fileUrl} alt={resource.title} className="w-full rounded-md" />
+        return <img src={fileUrl} alt={resource.title} className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md" />
       } else {
         return (
           <a
@@ -150,57 +151,82 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted }: Resourc
 
   return (
     <>
-      <Card ref={setNodeRef} style={style} className="relative">
-        <div className="flex items-start gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="mt-6 p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
-          >
-            <GripVertical className="h-5 w-5" />
-          </button>
+      <Card ref={setNodeRef} style={style} className="relative overflow-hidden">
+        <div className="flex items-start gap-2 sm:gap-3">
+          {isAuthenticated && (
+            <button
+              {...attributes}
+              {...listeners}
+              className="mt-4 sm:mt-6 p-2 sm:p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none flex-shrink-0"
+              aria-label="Drag to reorder"
+            >
+              <GripVertical className="h-5 w-5 sm:h-6 sm:w-6" />
+            </button>
+          )}
 
-          <div className="flex-1">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="cursor-pointer" onClick={handleToggleExpand}>
-                  {resource.title}
-                </CardTitle>
-                <div className="flex gap-2">
+          <div className="flex-1 min-w-0">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="flex-1 min-w-0 pr-2">
+                  <CardTitle 
+                    className={`${isAuthenticated ? "cursor-pointer hover:text-primary" : ""} text-base sm:text-lg font-semibold break-words leading-tight`} 
+                    onClick={isAuthenticated ? handleToggleExpand : undefined}
+                    title={resource.title}
+                  >
+                    {resource.title}
+                  </CardTitle>
+                  {resource.description && (
+                    <CardDescription className="mt-1.5 line-clamp-2 sm:line-clamp-none text-sm">
+                      {resource.description}
+                    </CardDescription>
+                  )}
+                </div>
+                <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleToggleExpand}
+                    className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
                   >
                     {isExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
+                      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
                     ) : (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
                     )}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setTitle(resource.title)
-                      setDescription(resource.description || '')
-                      setEditDialogOpen(true)
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={handleDelete}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isAuthenticated && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setTitle(resource.title)
+                          setDescription(resource.description || '')
+                          setEditDialogOpen(true)
+                        }}
+                        className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                        aria-label="Edit resource"
+                      >
+                        <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={handleDelete} 
+                        className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                        aria-label="Delete resource"
+                      >
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
-              {resource.description && (
-                <CardDescription>{resource.description}</CardDescription>
-              )}
             </CardHeader>
 
             {isExpanded && (
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 {renderResourceContent()}
               </CardContent>
             )}
@@ -209,7 +235,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted }: Resourc
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Resource</DialogTitle>
             <DialogDescription>Update the resource details.</DialogDescription>

@@ -54,9 +54,10 @@ export function CreateResourceDialog({ pageId, onResourceCreated }: CreateResour
       setMode('file')
       setOpen(false)
       onResourceCreated()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create resource:', error)
-      alert('Failed to create resource')
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to create resource'
+      alert(`Failed to create resource: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
@@ -67,7 +68,7 @@ export function CreateResourceDialog({ pageId, onResourceCreated }: CreateResour
       <DialogTrigger asChild>
         <Button>Add Resource</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add Resource</DialogTitle>

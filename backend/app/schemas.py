@@ -85,3 +85,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+
+class ResourceReorderRequest(BaseModel):
+    """Request body for reordering resources. Expects {resource_id: new_order}"""
+    pass  # We'll use dict validation in the endpoint
+

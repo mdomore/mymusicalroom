@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { pagesApi, resourcesApi, type Page, type Resource } from '@/lib/api'
+import { pagesApi, resourcesApi, type Page, type Resource, loadStoredToken } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceList } from '@/components/ResourceList'
@@ -16,8 +16,11 @@ export default function PageDetail() {
   const [page, setPage] = useState<Page | null>(null)
   const [resources, setResources] = useState<Resource[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
+    const token = loadStoredToken()
+    setIsAuthenticated(!!token)
     if (pageId) {
       loadPage()
       loadResources()
@@ -28,8 +31,12 @@ export default function PageDetail() {
     try {
       const response = await pagesApi.getById(pageId)
       setPage(response.data)
-    } catch (error) {
+      setIsAuthenticated(true)
+    } catch (error: any) {
       console.error('Failed to load page:', error)
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false)
+      }
     }
   }
 
@@ -37,8 +44,11 @@ export default function PageDetail() {
     try {
       const response = await resourcesApi.getAll(pageId)
       setResources(response.data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load resources:', error)
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false)
+      }
     } finally {
       setLoading(false)
     }
@@ -65,25 +75,31 @@ export default function PageDetail() {
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" onClick={() => router.push('/')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
+    <div className="container mx-auto p-4 sm:p-6 md:p-8">
+      <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
+        <Button variant="ghost" onClick={() => router.push('/')} className="flex-shrink-0">
+          <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+          <span className="hidden sm:inline">Back</span>
         </Button>
-        <h1 className="text-4xl font-bold">{page.name}</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold break-words flex-1 min-w-0" title={page.name}>
+          {page.name}
+        </h1>
       </div>
 
-      <div className="mb-6">
-        <CreateResourceDialog pageId={pageId} onResourceCreated={handleResourceCreated} />
-      </div>
+      {isAuthenticated && (
+        <div className="mb-4 sm:mb-6">
+          <CreateResourceDialog pageId={pageId} onResourceCreated={handleResourceCreated} />
+        </div>
+      )}
 
       <ResourceList
         resources={resources}
         pageId={pageId}
         onResourceUpdated={handleResourceUpdated}
         onResourceDeleted={handleResourceDeleted}
+        isAuthenticated={isAuthenticated}
         onReorder={async (orders) => {
+          if (!isAuthenticated) return
           try {
             await resourcesApi.reorder(orders)
             loadResources()

@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/pages", tags=["pages"])
 
 
 @router.get("/", response_model=List[schemas.PageWithResources])
-def get_pages(db: Session = Depends(get_db)):
+def get_pages(db: Session = Depends(get_db), user=Depends(get_current_user)):
     pages = (
         db.query(models.Page)
         .order_by(models.Page.is_favorite.desc(), models.Page.name.asc())
@@ -19,7 +19,7 @@ def get_pages(db: Session = Depends(get_db)):
 
 
 @router.get("/{page_id}", response_model=schemas.PageWithResources)
-def get_page(page_id: int, db: Session = Depends(get_db)):
+def get_page(page_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     page = db.query(models.Page).filter(models.Page.id == page_id).first()
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")

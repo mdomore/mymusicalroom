@@ -8,7 +8,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -21,14 +21,14 @@ services:
       - ./backend:/app
       - ./resources:/app/resources
     ports:
-      - "8000:8000"
+      - "8005:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/mymusicalroom
       RESOURCES_DIR: /app/resources
     depends_on:
       db:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 300 --timeout-graceful-shutdown 300
 
   frontend:
     build: ./frontend
@@ -39,7 +39,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: /mymusicalroom
     depends_on:
       - backend
 

@@ -33,7 +33,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-md p-8 space-y-6">
+    <div className="container mx-auto max-w-md p-4 sm:p-6 md:p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Register</h1>
         <p className="text-muted-foreground">Create an account to manage resources.</p>

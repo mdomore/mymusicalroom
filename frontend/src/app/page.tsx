@@ -27,8 +27,13 @@ export default function Home() {
     try {
       const response = await pagesApi.getAll()
       setPages(response.data)
-    } catch (error) {
+      setIsAuthenticated(true)
+    } catch (error: any) {
       console.error('Failed to load pages:', error)
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false)
+        // Redirect handled by interceptor
+      }
     } finally {
       setLoading(false)
     }
@@ -88,28 +93,28 @@ export default function Home() {
   )
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">My Musical Room</h1>
-        <div className="flex gap-2">
+    <div className="container mx-auto p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">My Musical Room</h1>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {isAuthenticated ? (
             <>
               <CreatePageDialog onPageCreated={handlePageCreated} />
-              <Button variant="outline" onClick={handleLogout}>Logout</Button>
+              <Button variant="outline" onClick={handleLogout} className="w-full sm:w-auto">Logout</Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleLoginNavigate}>Login</Button>
-              <Button onClick={handleRegisterNavigate}>Register</Button>
+              <Button variant="outline" onClick={handleLoginNavigate} className="w-full sm:w-auto">Login</Button>
+              <Button onClick={handleRegisterNavigate} className="w-full sm:w-auto">Register</Button>
             </>
           )}
         </div>
       </div>
 
-      <div className="grid gap-8">
+      <div className="grid gap-6 sm:gap-8">
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Songs</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Songs</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {songs.map((page) => (
               <Link key={page.id} href={`/pages/${page.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -146,8 +151,8 @@ export default function Home() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Technical</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Technical</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {technical.map((page) => (
               <Link key={page.id} href={`/pages/${page.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">

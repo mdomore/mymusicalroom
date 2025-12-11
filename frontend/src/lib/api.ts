@@ -33,6 +33,21 @@ if (typeof window !== 'undefined') {
   loadStoredToken();
 }
 
+// Add response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login
+      setAuthToken(undefined);
+      if (typeof window !== 'undefined') {
+        window.location.href = '/mymusicalroom/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface Page {
   id: number;
   name: string;

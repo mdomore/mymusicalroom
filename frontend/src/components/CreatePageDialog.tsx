@@ -48,7 +48,7 @@ export function CreatePageDialog({ onPageCreated }: CreatePageDialogProps) {
       <DialogTrigger asChild>
         <Button>Create Page</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Page</DialogTitle>
