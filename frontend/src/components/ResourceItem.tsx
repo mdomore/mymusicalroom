@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, ChevronDown, ChevronUp, Trash2, Edit } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { type Resource, resourcesApi } from '@/lib/api'
+import { useState } from "react"
+import dynamic from "next/dynamic"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { GripVertical, ChevronDown, ChevronUp, Trash2, Edit } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { type Resource, resourcesApi } from "@/lib/api"
 import {
   Dialog,
   DialogContent,
@@ -14,11 +15,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select } from '@/components/ui/select'
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+
+const PlyrVideoPlayer = dynamic(() => import("@/components/PlyrVideoPlayer"), {
+  ssr: false,
+})
 
 interface ResourceItemProps {
   resource: Resource
@@ -32,7 +38,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
   const [isExpanded, setIsExpanded] = useState(resource.is_expanded)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [title, setTitle] = useState(resource.title)
-  const [description, setDescription] = useState(resource.description || '')
+  const [description, setDescription] = useState(resource.description || "")
   const [loading, setLoading] = useState(false)
 
   const {
@@ -56,19 +62,19 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
     try {
       await resourcesApi.update(resource.id, { is_expanded: newExpanded })
     } catch (error) {
-      console.error('Failed to update resource:', error)
+      console.error("Failed to update resource:", error)
       setIsExpanded(!newExpanded) // Revert on error
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this resource?')) return
+    if (!confirm("Are you sure you want to delete this resource?")) return
     try {
       await resourcesApi.delete(resource.id)
       onDeleted()
     } catch (error) {
-      console.error('Failed to delete resource:', error)
-      alert('Failed to delete resource')
+      console.error("Failed to delete resource:", error)
+      alert("Failed to delete resource")
     }
   }
 
@@ -82,8 +88,8 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
       setEditDialogOpen(false)
       onUpdated()
     } catch (error) {
-      console.error('Failed to update resource:', error)
-      alert('Failed to update resource')
+      console.error("Failed to update resource:", error)
+      alert("Failed to update resource")
     } finally {
       setLoading(false)
     }
@@ -92,14 +98,14 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
   const renderResourceContent = () => {
     if (resource.external_url) {
       // YouTube or other external video
-      if (resource.resource_type === 'video' && resource.external_url.includes('youtube.com')) {
-        const videoId = resource.external_url.includes('youtu.be')
-          ? resource.external_url.split('/').pop()?.split('?')[0]
-          : new URL(resource.external_url).searchParams.get('v')
-        
+      if (resource.resource_type === "video" && resource.external_url.includes("youtube.com")) {
+        const videoId = resource.external_url.includes("youtu.be")
+          ? resource.external_url.split("/").pop()?.split("?")[0]
+          : new URL(resource.external_url).searchParams.get("v")
+
         if (videoId) {
           return (
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
               <iframe
                 src={`https://www.youtube.com/embed/${videoId}`}
                 frameBorder="0"
@@ -124,15 +130,43 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
     } else if (resource.file_path) {
       // Local file
       const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/resources/file/${resource.file_path}`
-      
-      if (resource.resource_type === 'video') {
+      const isPdf = resource.file_path.toLowerCase().endsWith(".pdf")
+
+      if (resource.resource_type === "video") {
         return (
-          <video controls className="w-full h-auto -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md max-h-[70vh]" src={fileUrl}>
-            Your browser does not support the video tag.
-          </video>
+          <div
+            className={cn(
+              "w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+3rem)] sm:-ml-6",
+              isAuthenticated && "-ml-[3.75rem] w-[calc(100%+4.75rem)] sm:-ml-[4.25rem] sm:w-[calc(100%+5.75rem)]"
+            )}
+          >
+            <PlyrVideoPlayer
+              src={fileUrl}
+              className="w-full h-auto max-h-[70vh]"
+            />
+          </div>
         )
-      } else if (resource.resource_type === 'photo') {
+      } else if (resource.resource_type === "audio") {
+        return (
+          <audio controls className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md" src={fileUrl}>
+            Your browser does not support the audio tag.
+          </audio>
+        )
+      } else if (resource.resource_type === "photo") {
         return <img src={fileUrl} alt={resource.title} className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md" />
+      } else if (isPdf) {
+        return (
+          <div
+            className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md overflow-hidden"
+            style={{ height: "70vh", minHeight: "500px" }}
+          >
+            <iframe
+              src={fileUrl}
+              className="w-full h-full border-0"
+              title={resource.title}
+            />
+          </div>
+        )
       } else {
         return (
           <a
@@ -168,8 +202,8 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
             <CardHeader className="p-4 sm:p-6">
               <div className="flex items-start gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0 pr-2">
-                  <CardTitle 
-                    className={`${isAuthenticated ? "cursor-pointer hover:text-primary" : ""} text-base sm:text-lg font-semibold break-words leading-tight`} 
+                  <CardTitle
+                    className={`${isAuthenticated ? "cursor-pointer hover:text-primary" : ""} text-base sm:text-lg font-semibold break-words leading-tight`}
                     onClick={isAuthenticated ? handleToggleExpand : undefined}
                     title={resource.title}
                   >
@@ -202,7 +236,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
                         size="icon"
                         onClick={() => {
                           setTitle(resource.title)
-                          setDescription(resource.description || '')
+                          setDescription(resource.description || "")
                           setEditDialogOpen(true)
                         }}
                         className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
@@ -210,10 +244,10 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
                       >
                         <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={handleDelete} 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDelete}
                         className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                         aria-label="Delete resource"
                       >
@@ -269,7 +303,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
               Cancel
             </Button>
             <Button type="button" onClick={handleUpdate} disabled={loading}>
-              {loading ? 'Updating...' : 'Update'}
+              {loading ? "Updating..." : "Update"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -277,4 +311,3 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
     </>
   )
 }
-

@@ -81,3 +81,33 @@
   overflow: hidden;
 }
 
+/* Plyr Customizations for Mobile */
+@media (max-width: 640px) {
+  /* Hide volume slider on mobile to save space */
+  .plyr__volume input {
+    display: none !important;
+  }
+  
+  /* Reduce padding on control items */
+  .plyr__controls .plyr__controls__item {
+    padding: 4px !important;
+  }
+  
+  /* Reduce SVG size slightly if needed */
+  .plyr__controls .plyr__controls__item svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  /* Ensure fast-forward/rewind are visible */
+  .plyr__controls__item[data-plyr="rewind"],
+  .plyr__controls__item[data-plyr="fast-forward"] {
+    display: flex !important;
+  }
+
+  /* Compact time display */
+  .plyr__time {
+    padding: 0 4px !important;
+    font-size: 12px !important;
+  }
+}

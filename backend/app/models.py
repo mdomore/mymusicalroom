@@ -15,6 +15,7 @@ class ResourceType(str, enum.Enum):
     PHOTO = "photo"
     DOCUMENT = "document"
     MUSIC_SHEET = "music_sheet"
+    AUDIO = "audio"
 
 
 class Page(Base):
