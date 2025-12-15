@@ -111,3 +111,22 @@
     font-size: 12px !important;
   }
 }
+
+/* Fix Plyr Menu Visibility and Z-Index */
+.plyr__menu__container {
+  z-index: 100 !important;
+  background: white !important; /* Ensure opaque background */
+}
+
+/* For dark mode if needed, though Plyr usually handles it. 
+   But if background is missing, force it. */
+.plyr--full-ui.plyr--video .plyr__control--overlaid, 
+.plyr--full-ui.plyr--video .plyr__controls, 
+.plyr--full-ui.plyr--video .plyr__cues {
+   z-index: 50; 
+}
+
+/* Ensure menu items are readable */
+.plyr__menu__container .plyr__control {
+  opacity: 1 !important; 
+}

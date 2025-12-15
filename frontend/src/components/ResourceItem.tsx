@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-const PlyrVideoPlayer = dynamic(() => import("@/components/PlyrVideoPlayer"), {
+const PlyrPlayer = dynamic(() => import("@/components/PlyrPlayer"), {
   ssr: false,
 })
 
@@ -140,17 +140,27 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
               isAuthenticated && "-ml-[3.75rem] w-[calc(100%+4.75rem)] sm:-ml-[4.25rem] sm:w-[calc(100%+5.75rem)]"
             )}
           >
-            <PlyrVideoPlayer
+            <PlyrPlayer
               src={fileUrl}
               className="w-full h-auto max-h-[70vh]"
+              type="video"
             />
           </div>
         )
       } else if (resource.resource_type === "audio") {
         return (
-          <audio controls className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md" src={fileUrl}>
-            Your browser does not support the audio tag.
-          </audio>
+          <div
+            className={cn(
+              "w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+3rem)] sm:-ml-6",
+              isAuthenticated && "-ml-[3.75rem] w-[calc(100%+4.75rem)] sm:-ml-[4.25rem] sm:w-[calc(100%+5.75rem)]"
+            )}
+          >
+            <PlyrPlayer
+              src={fileUrl}
+              className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md"
+              type="audio"
+            />
+          </div>
         )
       } else if (resource.resource_type === "photo") {
         return <img src={fileUrl} alt={resource.title} className="w-full -ml-4 sm:-ml-6 rounded-r-md sm:rounded-md" />
