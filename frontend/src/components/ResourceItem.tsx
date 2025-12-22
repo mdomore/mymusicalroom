@@ -99,9 +99,19 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
     if (resource.external_url) {
       // YouTube or other external video
       if (resource.resource_type === "video" && resource.external_url.includes("youtube.com")) {
-        const videoId = resource.external_url.includes("youtu.be")
-          ? resource.external_url.split("/").pop()?.split("?")[0]
-          : new URL(resource.external_url).searchParams.get("v")
+        let videoId: string | undefined | null
+        
+        if (resource.external_url.includes("youtu.be")) {
+          videoId = resource.external_url.split("/").pop()?.split("?")[0]
+        } else if (resource.external_url.includes("/shorts/")) {
+          videoId = resource.external_url.split("/shorts/")[1]?.split("?")[0]
+        } else {
+          try {
+            videoId = new URL(resource.external_url).searchParams.get("v")
+          } catch (e) {
+            console.error("Invalid URL:", resource.external_url)
+          }
+        }
 
         if (videoId) {
           return (

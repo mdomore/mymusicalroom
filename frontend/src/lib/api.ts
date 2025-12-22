@@ -62,7 +62,7 @@ export interface Resource {
   page_id: number;
   title: string;
   description?: string;
-  resource_type: 'video' | 'photo' | 'document' | 'music_sheet';
+  resource_type: 'video' | 'photo' | 'document' | 'music_sheet' | 'audio';
   file_path?: string;
   external_url?: string;
   order: number;

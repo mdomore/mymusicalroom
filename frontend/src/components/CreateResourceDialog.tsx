@@ -107,7 +107,7 @@ export function CreateResourceDialog({ pageId, onResourceCreated }: CreateResour
                   type="url"
                   value={externalUrl}
                   onChange={(e) => setExternalUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
+                  placeholder="https://youtube.com/watch?v=... or https://youtube.com/shorts/..."
                   required={mode === 'url'}
                 />
               </div>
