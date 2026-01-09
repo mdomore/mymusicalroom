@@ -8,6 +8,7 @@ from app.database import get_db
 from app import models, schemas
 from app.auth import get_current_user
 from app.error_handler import create_safe_http_exception
+from app.file_validation import validate_file, get_safe_file_extension
 
 router = APIRouter(prefix="/api/resources", tags=["resources"])
 
@@ -71,29 +72,51 @@ async def upload_file(
         if not file.filename:
             raise HTTPException(status_code=400, detail="No file provided")
         
-        # Determine resource type from file extension if not provided
+        # Read file content for validation
+        file_content = await file.read()
+        await file.seek(0)  # Reset file pointer for saving
+        
+        # Validate file using magic bytes, size, and type
+        try:
+            detected_mime, detected_ext, detected_type = validate_file(
+                file_content=file_content,
+                content_type=file.content_type,
+                filename=file.filename,
+                expected_type=resource_type
+            )
+        except ValueError as validation_error:
+            raise HTTPException(status_code=400, detail=str(validation_error))
+        
+        # Use detected type if resource_type was not provided
         if not resource_type:
-            ext = Path(file.filename).suffix.lower()
-            if ext in ['.mp4', '.avi', '.mov', '.webm']:
-                resource_type = "video"
-            elif ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-                resource_type = "photo"
-            elif ext in ['.pdf', '.doc', '.docx']:
-                resource_type = "document"
-            else:
-                resource_type = "document"
+            resource_type = detected_type
+        
+        # Ensure resource_type matches detected type
+        if resource_type != detected_type:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File type mismatch. Expected {resource_type}, but file is {detected_type}."
+            )
         
         # Create directory structure: resources/{page_type}/{page_name}/
         page_dir = Path(RESOURCES_DIR) / page.type.value / page.name.lower().replace(" ", "_")
         page_dir.mkdir(parents=True, exist_ok=True)
         
-        # Sanitize filename to avoid path traversal
-        safe_filename = Path(file.filename).name  # Get just the filename, no path
+        # Sanitize filename and use safe extension from magic bytes
+        original_filename = Path(file.filename).stem  # Get filename without extension
+        safe_ext = detected_ext or get_safe_file_extension(file_content, resource_type)
+        safe_filename = f"{original_filename}{safe_ext}"
+        
+        # Additional sanitization: remove any dangerous characters
+        safe_filename = "".join(c for c in safe_filename if c.isalnum() or c in "._-")
+        if not safe_filename:
+            safe_filename = f"file{safe_ext}"
+        
         file_path = page_dir / safe_filename
         
         # Save file
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(file_content)
         
         # Get relative path for database
         relative_path = f"{page.type.value}/{page.name.lower().replace(' ', '_')}/{safe_filename}"
