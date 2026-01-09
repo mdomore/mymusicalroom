@@ -167,6 +167,7 @@ class TokenResponse(BaseModel):
     refresh_token: str | None = None
     token_type: str = "bearer"
     email: str | None = None  # Return email for frontend convenience
+    csrf_token: str | None = None  # CSRF token for state-changing operations
 
 
 class ResourceReorderRequest(BaseModel):

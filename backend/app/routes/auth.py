@@ -9,6 +9,7 @@ from app.security_logging import (
     log_failed_registration, log_successful_registration,
     log_rate_limit_exceeded
 )
+from app.csrf import generate_csrf_token
 from supabase import Client
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -119,11 +120,16 @@ def login(
             )
         
         log_successful_login(request, email)
+        
+        # Generate CSRF token for the session
+        csrf_token = generate_csrf_token()
+        
         return {
             "access_token": response.session.access_token,
             "refresh_token": response.session.refresh_token,
             "token_type": "bearer",
             "email": email,  # Return email for frontend to use
+            "csrf_token": csrf_token,  # Return CSRF token for state-changing operations
         }
     except HTTPException:
         raise
