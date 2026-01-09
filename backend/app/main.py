@@ -7,6 +7,7 @@ from app.routes import pages, resources, auth, auth_migration
 from app.config import ENVIRONMENT
 from app.security_headers import SecurityHeadersMiddleware
 from app.csrf import CSRFProtectionMiddleware
+from app.cookie_security import SecureCookieMiddleware
 import os
 from pathlib import Path
 
@@ -27,6 +28,9 @@ app.add_middleware(
 
 # CSRF protection middleware (after security headers, before CORS)
 app.add_middleware(CSRFProtectionMiddleware)
+
+# Secure cookie settings middleware (after CSRF, before CORS)
+app.add_middleware(SecureCookieMiddleware, environment=ENVIRONMENT)
 
 # CORS middleware
 app.add_middleware(
