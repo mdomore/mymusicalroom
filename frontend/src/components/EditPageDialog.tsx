@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -9,82 +9,88 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { pagesApi } from '@/lib/api'
+import { pagesApi, type Page } from '@/lib/api'
 
-interface CreatePageDialogProps {
-  onPageCreated: () => void
+interface EditPageDialogProps {
+  page: Page | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onPageUpdated: () => void
 }
 
-export function CreatePageDialog({ onPageCreated }: CreatePageDialogProps) {
-  const [open, setOpen] = useState(false)
+export function EditPageDialog({ page, open, onOpenChange, onPageUpdated }: EditPageDialogProps) {
   const [name, setName] = useState('')
   const [type, setType] = useState<'song' | 'technical'>('song')
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (page) {
+      setName(page.name)
+      setType(page.type)
+    }
+  }, [page])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!page) return
+    
     setLoading(true)
     try {
-      await pagesApi.create({ name, type })
-      setName('')
-      setType('song')
-      setOpen(false)
-      onPageCreated()
+      await pagesApi.update(page.id, { name, type })
+      onOpenChange(false)
+      onPageUpdated()
     } catch (error) {
-      console.error('Failed to create page:', error)
-      alert('Failed to create page')
+      console.error('Failed to update page:', error)
+      alert('Failed to update page')
     } finally {
       setLoading(false)
     }
   }
 
+  if (!page) return null
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Create Page</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Page</DialogTitle>
+            <DialogTitle>Edit Page</DialogTitle>
             <DialogDescription>
-              Create a new page for a song or technical content.
+              Update the page name and type.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="edit-name">Name</Label>
               <Input
-                id="name"
+                id="edit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="type">Type</Label>
-              <select
-                id="type"
+              <Label htmlFor="edit-type">Type</Label>
+              <Select
+                id="edit-type"
                 value={type}
                 onChange={(e) => setType(e.target.value as 'song' | 'technical')}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="song">Song</option>
                 <option value="technical">Technical</option>
-              </select>
+              </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create'}
+              {loading ? 'Updating...' : 'Update'}
             </Button>
           </DialogFooter>
         </form>
@@ -92,4 +98,3 @@ export function CreatePageDialog({ onPageCreated }: CreatePageDialogProps) {
     </Dialog>
   )
 }
-

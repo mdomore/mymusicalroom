@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from app import schemas
 from app.auth import get_current_user, supabase
 from app.config import EASYMEAL_DATABASE_URL
+from app.rate_limit import rate_limit_dependency
 from supabase import Client
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -19,7 +20,11 @@ if EASYMEAL_DATABASE_URL:
 
 
 @router.post("/register", response_model=schemas.UserResponse)
-def register(payload: schemas.UserCreate):
+def register(
+    payload: schemas.UserCreate,
+    request: Request,
+    _: bool = Depends(rate_limit_dependency("register"))
+):
     """Register a new user with Supabase Auth"""
     try:
         response = supabase.auth.sign_up({
@@ -52,7 +57,11 @@ def register(payload: schemas.UserCreate):
 
 
 @router.post("/login", response_model=schemas.TokenResponse)
-def login(payload: schemas.UserLogin):
+def login(
+    payload: schemas.UserLogin,
+    request: Request,
+    _: bool = Depends(rate_limit_dependency("login"))
+):
     """Login with Supabase Auth - supports both username and email"""
     try:
         # First, try to find user by username in easymeal database to get email
