@@ -15,6 +15,8 @@ RESOURCE_TITLE_MIN_LENGTH = 1
 RESOURCE_TITLE_MAX_LENGTH = 200
 DESCRIPTION_MAX_LENGTH = 10000
 URL_MAX_LENGTH = 2048
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_MAX_LENGTH = 128
 
 # Allowed URL schemes
 ALLOWED_URL_SCHEMES = {'http', 'https'}
@@ -186,3 +188,41 @@ def sanitize_filename(filename: Optional[str]) -> Optional[str]:
         filename = filename[:255]
     
     return filename
+
+
+def validate_password(password: str) -> str:
+    """
+    Validate password strength requirements:
+    - Minimum 8 characters
+    - Maximum 128 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one digit
+    - At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
+    """
+    if not password:
+        raise ValueError("Password is required")
+    
+    if len(password) < PASSWORD_MIN_LENGTH:
+        raise ValueError(f"Password must be at least {PASSWORD_MIN_LENGTH} characters long")
+    
+    if len(password) > PASSWORD_MAX_LENGTH:
+        raise ValueError(f"Password must be no more than {PASSWORD_MAX_LENGTH} characters long")
+    
+    # Check for at least one uppercase letter
+    if not re.search(r'[A-Z]', password):
+        raise ValueError("Password must contain at least one uppercase letter")
+    
+    # Check for at least one lowercase letter
+    if not re.search(r'[a-z]', password):
+        raise ValueError("Password must contain at least one lowercase letter")
+    
+    # Check for at least one digit
+    if not re.search(r'\d', password):
+        raise ValueError("Password must contain at least one digit")
+    
+    # Check for at least one special character
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]', password):
+        raise ValueError("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")
+    
+    return password

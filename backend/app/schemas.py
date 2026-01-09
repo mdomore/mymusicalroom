@@ -5,7 +5,8 @@ from app.models import PageType, ResourceType
 from pydantic import EmailStr
 from app.validators import (
     validate_page_name, validate_resource_title,
-    validate_description, validate_url, sanitize_filename
+    validate_description, validate_url, sanitize_filename,
+    validate_password
 )
 
 
@@ -140,6 +141,11 @@ class PageWithResources(PageResponse):
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_field(cls, v: str) -> str:
+        return validate_password(v)
 
 
 class UserLogin(BaseModel):
