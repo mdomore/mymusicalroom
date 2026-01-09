@@ -144,8 +144,8 @@ def login(
 
 
 @router.post("/logout")
-def logout():
-    """Logout from Supabase Auth"""
+def logout(current_user: dict = Depends(get_current_user)):
+    """Logout from Supabase Auth - requires authentication"""
     try:
         supabase.auth.sign_out()
         return {"message": "Logged out"}

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.auth import supabase
+from app.auth import supabase, get_current_user
 from app.config import get_required_env
 from app.error_handler import create_safe_http_exception
 import bcrypt
@@ -33,10 +33,11 @@ class MigrateRequest(BaseModel):
 
 
 @router.post("/sync-password")
-async def sync_password(request: MigrateRequest):
+async def sync_password(request: MigrateRequest, current_user: dict = Depends(get_current_user)):
     """
     Sync password from easymeal to Supabase Auth.
     Verifies easymeal credentials and sets the same password in Supabase.
+    Requires authentication.
     """
     if not EasymealSession:
         raise HTTPException(
