@@ -55,9 +55,44 @@ ENVIRONMENT = get_optional_env(
 )
 
 # Database configuration
+DATABASE_URL = get_required_env(
+    "DATABASE_URL",
+    description="PostgreSQL database URL for mymusicalroom"
+)
+
 # EASYMEAL_DATABASE_URL is optional (only needed for username lookup during login)
 # If not provided, login will only work with email addresses
 EASYMEAL_DATABASE_URL = get_optional_env(
     "EASYMEAL_DATABASE_URL",
     description="Database URL for easymeal database (optional, only needed for username lookup)"
+)
+
+# Supabase configuration
+SUPABASE_URL = get_required_env(
+    "SUPABASE_URL",
+    description="Supabase project URL"
+)
+
+SUPABASE_SERVICE_ROLE_KEY = get_required_env(
+    "SUPABASE_SERVICE_ROLE_KEY",
+    description="Supabase service role key (for admin operations)"
+)
+
+SUPABASE_ANON_KEY = get_optional_env(
+    "SUPABASE_ANON_KEY",
+    description="Supabase anonymous key (optional)"
+)
+
+# JWT secret - typically the same as service role key or a separate JWT_SECRET env var
+SUPABASE_JWT_SECRET = get_optional_env(
+    "SUPABASE_JWT_SECRET",
+    default=None,
+    description="JWT secret for token validation (defaults to SUPABASE_SERVICE_ROLE_KEY if not set)"
+) or SUPABASE_SERVICE_ROLE_KEY
+
+# Resources directory configuration
+RESOURCES_DIR = get_optional_env(
+    "RESOURCES_DIR",
+    default="/app/resources",
+    description="Directory for storing uploaded resource files"
 )

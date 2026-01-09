@@ -2,14 +2,14 @@
 Centralized error handling to prevent information leakage.
 Provides safe error messages in production while logging full details server-side.
 """
-import os
 import logging
+from app.config import ENVIRONMENT
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Check if we're in production mode
-IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() in ("production", "prod")
+IS_PRODUCTION = ENVIRONMENT.lower() in ("production", "prod")
 
 
 def get_safe_error_message(

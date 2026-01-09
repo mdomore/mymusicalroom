@@ -4,22 +4,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.database import engine, Base, get_db
 from app.routes import pages, resources, auth, auth_migration
-from app.config import ENVIRONMENT
+from app.config import ENVIRONMENT, RESOURCES_DIR
 from app.security_headers import SecurityHeadersMiddleware
 from app.csrf import CSRFProtectionMiddleware
 from app.cookie_security import SecureCookieMiddleware
 from app.auth import get_current_user
 from app import models
 from sqlalchemy.orm import Session
-import os
 from pathlib import Path
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
 # Ensure resources directory exists
-resources_dir = os.getenv("RESOURCES_DIR", "/app/resources")
-Path(resources_dir).mkdir(parents=True, exist_ok=True)
+Path(RESOURCES_DIR).mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="My Musical Room API")
 
@@ -65,16 +63,16 @@ async def serve_file(
     Requires authentication and verifies that the file belongs to a valid resource.
     """
     from urllib.parse import unquote
+    import os
     
-    resources_dir = os.getenv("RESOURCES_DIR", "/app/resources")
     # Decode URL-encoded path
     decoded_path = unquote(file_path)
-    full_path = os.path.join(resources_dir, decoded_path)
+    full_path = os.path.join(RESOURCES_DIR, decoded_path)
     
     # Security: prevent path traversal
     full_path = os.path.normpath(full_path)
-    resources_dir = os.path.normpath(resources_dir)
-    if not full_path.startswith(resources_dir):
+    resources_dir_norm = os.path.normpath(RESOURCES_DIR)
+    if not full_path.startswith(resources_dir_norm):
         raise HTTPException(status_code=403, detail="Access denied")
     
     if not os.path.exists(full_path):

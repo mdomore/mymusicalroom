@@ -3,14 +3,13 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
 from app.security_logging import log_authentication_failure
-import os
+from app.config import (
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_ANON_KEY,
+    SUPABASE_JWT_SECRET
+)
 import jwt
-
-SUPABASE_URL = os.getenv("SUPABASE_URL", "http://supabase-kong:8000")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
-# JWT secret - typically the same as service role key or a separate JWT_SECRET env var
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", os.getenv("JWT_SECRET", SUPABASE_SERVICE_ROLE_KEY))
 
 # Create Supabase client with service role key for admin operations
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)

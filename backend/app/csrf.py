@@ -8,16 +8,7 @@ from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import jwt
-import os
-
-# Get JWT secret from environment (same as auth.py uses)
-# Import from auth module to ensure consistency
-try:
-    from app.auth import SUPABASE_JWT_SECRET
-except ImportError:
-    # Fallback if auth module not available
-    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-    SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", os.getenv("JWT_SECRET", SUPABASE_SERVICE_ROLE_KEY))
+from app.config import SUPABASE_JWT_SECRET
 
 # State-changing HTTP methods that require CSRF protection
 CSRF_PROTECTED_METHODS = {"POST", "PUT", "PATCH", "DELETE"}

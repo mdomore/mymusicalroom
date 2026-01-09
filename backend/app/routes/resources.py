@@ -9,10 +9,9 @@ from app import models, schemas
 from app.auth import get_current_user
 from app.error_handler import create_safe_http_exception
 from app.file_validation import validate_file, get_safe_file_extension
+from app.config import RESOURCES_DIR
 
 router = APIRouter(prefix="/api/resources", tags=["resources"])
-
-RESOURCES_DIR = os.getenv("RESOURCES_DIR", "/app/resources")
 
 
 @router.get("/", response_model=List[schemas.ResourceResponse])
