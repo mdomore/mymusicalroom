@@ -29,13 +29,16 @@ This document lists all API endpoints and their authentication status.
 - ⚠️ `POST /sync-password` - **FIXED**: Now requires authentication
 
 ## Main Routes
-- ⚠️ `GET /api/resources/file/{file_path:path}` - **FIXED**: Now requires authentication and ownership verification (see task mmr-sec-13)
+- ✅ `GET /api/resources/file/{file_path:path}` - **FIXED**: Now requires authentication and verifies file is associated with a valid resource
 - ✅ `GET /` - Public (root endpoint, intentionally public)
 
 ## Issues Found and Fixed
 1. **`POST /api/auth/logout`** - Was missing authentication check. Fixed to require `get_current_user`.
 2. **`POST /api/auth/migrate/sync-password`** - Was missing authentication check. Fixed to require `get_current_user`.
-3. **`GET /api/resources/file/{file_path:path}`** - Was missing authentication and ownership check. Fixed in task mmr-sec-13.
+3. **`GET /api/resources/file/{file_path:path}`** - Was missing authentication and resource verification. Fixed to require authentication and verify file belongs to a valid resource.
+
+## Note on Ownership Verification
+The file serving endpoint now requires authentication and verifies that the file is associated with a valid resource in the database. However, without a `user_id` field on the `Page` model, full ownership verification is not possible. Currently, any authenticated user can access any file that's registered as a resource. To enable proper ownership verification, a `user_id` field should be added to the `Page` model.
 
 ## Status
 All endpoints now have proper authentication checks where required.

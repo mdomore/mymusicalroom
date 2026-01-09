@@ -1,13 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.database import engine, Base
+from app.database import engine, Base, get_db
 from app.routes import pages, resources, auth, auth_migration
 from app.config import ENVIRONMENT
 from app.security_headers import SecurityHeadersMiddleware
 from app.csrf import CSRFProtectionMiddleware
 from app.cookie_security import SecureCookieMiddleware
+from app.auth import get_current_user
+from app import models
+from sqlalchemy.orm import Session
 import os
 from pathlib import Path
 
@@ -52,8 +55,15 @@ app.include_router(auth_migration.router)
 
 
 @app.get("/api/resources/file/{file_path:path}")
-async def serve_file(file_path: str):
-    """Serve uploaded files"""
+async def serve_file(
+    file_path: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Serve uploaded files.
+    Requires authentication and verifies that the file belongs to a valid resource.
+    """
     from urllib.parse import unquote
     
     resources_dir = os.getenv("RESOURCES_DIR", "/app/resources")
@@ -65,12 +75,26 @@ async def serve_file(file_path: str):
     full_path = os.path.normpath(full_path)
     resources_dir = os.path.normpath(resources_dir)
     if not full_path.startswith(resources_dir):
-        from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Access denied")
     
     if not os.path.exists(full_path):
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # Security: Verify that the file belongs to a valid resource in the database
+    # This ensures users can only access files that are registered as resources
+    # Note: Without user_id field on pages/resources, we can't verify ownership,
+    # but we can at least verify the file is associated with a valid resource
+    resource = db.query(models.Resource).filter(
+        models.Resource.file_path == decoded_path
+    ).first()
+    
+    if not resource:
+        # File exists but is not associated with any resource - deny access
+        raise HTTPException(status_code=403, detail="Access denied: File not associated with any resource")
+    
+    # File is associated with a valid resource - allow access
+    # TODO: Add user_id field to Page model to enable proper ownership verification
+    # For now, any authenticated user can access any file that's a registered resource
     
     return FileResponse(full_path)
 
