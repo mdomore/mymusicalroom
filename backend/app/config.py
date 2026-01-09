@@ -47,6 +47,13 @@ def get_optional_env(key: str, default: str = None, description: str = None) -> 
     return value if value else None
 
 
+# Environment configuration
+ENVIRONMENT = get_optional_env(
+    "ENVIRONMENT",
+    default="development",
+    description="Application environment (development, production)"
+)
+
 # Database configuration
 # EASYMEAL_DATABASE_URL is optional (only needed for username lookup during login)
 # If not provided, login will only work with email addresses

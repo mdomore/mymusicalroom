@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.database import engine, Base
 from app.routes import pages, resources, auth, auth_migration
+from app.config import ENVIRONMENT
+from app.security_headers import SecurityHeadersMiddleware
 import os
 from pathlib import Path
 
@@ -15,6 +17,12 @@ resources_dir = os.getenv("RESOURCES_DIR", "/app/resources")
 Path(resources_dir).mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="My Musical Room API")
+
+# Security headers middleware (must be added first to apply to all responses)
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    environment=ENVIRONMENT
+)
 
 # CORS middleware
 app.add_middleware(
