@@ -3,6 +3,7 @@ from app import schemas
 from app.auth import get_current_user, supabase
 from app.config import EASYMEAL_DATABASE_URL
 from app.rate_limit import rate_limit_dependency
+from app.error_handler import create_safe_http_exception
 from supabase import Client
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -43,16 +44,20 @@ def register(
             "email": response.user.email,
             "created_at": response.user.created_at,
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        error_msg = str(e)
-        if "already registered" in error_msg.lower() or "already exists" in error_msg.lower():
+        error_msg = str(e).lower()
+        if "already registered" in error_msg or "already exists" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-        raise HTTPException(
+        # Use safe error handler to prevent information leakage
+        raise create_safe_http_exception(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Registration failed: {error_msg}"
+            generic_message="Registration failed",
+            error=e
         )
 
 
@@ -83,7 +88,9 @@ def login(
                     if user_row and user_row[0]:
                         email = user_row[0]
                 except Exception as e:
-                    print(f"Error looking up username: {e}")
+                    # Log error but don't expose details to client
+                    import logging
+                    logging.getLogger(__name__).warning(f"Error looking up username: {e}")
                 finally:
                     db.close()
             # If EASYMEAL_DATABASE_URL is not configured, username lookup is not available
@@ -107,12 +114,14 @@ def login(
             "token_type": "bearer",
             "email": email,  # Return email for frontend to use
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        error_msg = str(e)
-        print(f"Login error: {error_msg}")
-        raise HTTPException(
+        # Use safe error handler to prevent information leakage
+        raise create_safe_http_exception(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            generic_message="Invalid credentials",
+            error=e
         )
 
 

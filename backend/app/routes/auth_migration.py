@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.auth import supabase
 from app.config import get_required_env
+from app.error_handler import create_safe_http_exception
 import bcrypt
 
 router = APIRouter(prefix="/api/auth/migrate", tags=["auth-migration"])
@@ -114,7 +115,9 @@ async def sync_password(request: MigrateRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
+        # Use safe error handler to prevent information leakage
+        raise create_safe_http_exception(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to sync password: {str(e)}"
+            generic_message="Failed to sync password",
+            error=e
         )

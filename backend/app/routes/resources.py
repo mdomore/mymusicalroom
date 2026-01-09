@@ -7,6 +7,7 @@ from pathlib import Path
 from app.database import get_db
 from app import models, schemas
 from app.auth import get_current_user
+from app.error_handler import create_safe_http_exception
 
 router = APIRouter(prefix="/api/resources", tags=["resources"])
 
@@ -119,10 +120,13 @@ async def upload_file(
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        print(f"Upload error: {str(e)}")
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+        # Use safe error handler to prevent information leakage
+        # Full error details are logged server-side
+        raise create_safe_http_exception(
+            status_code=500,
+            generic_message="Failed to upload file",
+            error=e
+        )
 
 
 @router.put("/{resource_id}", response_model=schemas.ResourceResponse)
