@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { pagesApi, resourcesApi, type Page, type Resource, loadStoredToken } from '@/lib/api'
+import { pagesApi, resourcesApi, type Page, type Resource, getAuthToken } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResourceList } from '@/components/ResourceList'
@@ -19,8 +19,11 @@ export default function PageDetail() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    const token = loadStoredToken()
-    setIsAuthenticated(!!token)
+    const checkAuth = async () => {
+      const token = await getAuthToken()
+      setIsAuthenticated(!!token)
+    }
+    checkAuth()
     if (pageId) {
       loadPage()
       loadResources()

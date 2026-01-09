@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.database import engine, Base
-from app.routes import pages, resources, auth
+from app.routes import pages, resources, auth, auth_migration
 import os
 from pathlib import Path
 
@@ -32,13 +32,25 @@ app.add_middleware(
 app.include_router(pages.router)
 app.include_router(resources.router)
 app.include_router(auth.router)
+app.include_router(auth_migration.router)
 
 
 @app.get("/api/resources/file/{file_path:path}")
 async def serve_file(file_path: str):
     """Serve uploaded files"""
+    from urllib.parse import unquote
+    
     resources_dir = os.getenv("RESOURCES_DIR", "/app/resources")
-    full_path = os.path.join(resources_dir, file_path)
+    # Decode URL-encoded path
+    decoded_path = unquote(file_path)
+    full_path = os.path.join(resources_dir, decoded_path)
+    
+    # Security: prevent path traversal
+    full_path = os.path.normpath(full_path)
+    resources_dir = os.path.normpath(resources_dir)
+    if not full_path.startswith(resources_dir):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Access denied")
     
     if not os.path.exists(full_path):
         from fastapi import HTTPException

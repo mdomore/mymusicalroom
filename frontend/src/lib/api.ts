@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from './supabase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -7,42 +8,52 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Token helpers
-const TOKEN_KEY = 'mmr_token';
+// Token helpers - get token from Supabase session
+export const getAuthToken = async (): Promise<string | null> => {
+  if (typeof window === 'undefined') return null;
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token || null;
+};
 
-export const setAuthToken = (token?: string) => {
+export const setAuthToken = async (token?: string) => {
   if (!token) {
-    localStorage.removeItem(TOKEN_KEY);
     delete api.defaults.headers.common['Authorization'];
     return;
   }
-  localStorage.setItem(TOKEN_KEY, token);
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 };
 
-export const loadStoredToken = () => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  }
-  return token;
-};
-
-// Load token on import (client-side)
-if (typeof window !== 'undefined') {
-  loadStoredToken();
-}
+// Load token from Supabase session on API calls
+api.interceptors.request.use(
+  async (config) => {
+    const token = await getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Add response interceptor to handle 401 errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      setAuthToken(undefined);
+  async (error) => {
+    if (error?.response?.status === 401) {
+      // Sign out from Supabase and redirect to login
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out:', signOutError);
+      }
       if (typeof window !== 'undefined') {
         window.location.href = '/mymusicalroom/login';
       }
+    }
+    // Ensure error has a message
+    if (error && !error.message) {
+      error.message = error?.response?.data?.detail || error?.response?.statusText || 'An error occurred';
     }
     return Promise.reject(error);
   }
@@ -103,11 +114,11 @@ export const resourcesApi = {
   delete: (id: number) => api.delete(`/api/resources/${id}`),
 };
 
-// Auth
+// Auth - using Supabase directly
 export interface User {
-  id: number;
+  id: string;  // UUID string
   email: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface TokenResponse {
@@ -116,11 +127,51 @@ export interface TokenResponse {
 }
 
 export const authApi = {
-  register: (data: { email: string; password: string }) =>
-    api.post<User>('/api/auth/register', data),
-  login: (data: { email: string; password: string }) =>
-    api.post<TokenResponse>('/api/auth/login', data),
-  me: () => api.get<User>('/api/auth/me'),
-  logout: () => api.post('/api/auth/logout', {}),
+  register: async (data: { email: string; password: string }) => {
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+    });
+    if (error) throw error;
+    return { data: authData.user! };
+  },
+  login: async (data: { username: string; password: string }) => {
+    // Call backend API which handles username lookup and Supabase login
+    const response = await api.post<TokenResponse & { email?: string; refresh_token?: string }>('/api/auth/login', {
+      username: data.username,
+      password: data.password,
+    });
+    
+    // Set the Supabase session using the tokens from backend
+    if (response.data.access_token && response.data.refresh_token) {
+      const { error } = await supabase.auth.setSession({
+        access_token: response.data.access_token,
+        refresh_token: response.data.refresh_token,
+      });
+      if (error) {
+        console.warn('Failed to set Supabase session:', error);
+        // Fallback: sign in directly with email if we have it
+        if (response.data.email) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: response.data.email,
+            password: data.password,
+          });
+          if (signInError) throw signInError;
+        }
+      }
+    }
+    
+    return response;
+  },
+  me: async () => {
+    const response = await api.get<User>('/api/auth/me');
+    return response;
+  },
+  logout: async () => {
+    await api.post('/api/auth/logout');
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { data: { message: 'Logged out' } };
+  },
 };
 

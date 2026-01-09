@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authApi, setAuthToken } from '@/lib/api'
+import { authApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,12 +21,12 @@ export default function RegisterPage() {
     setError(null)
     try {
       await authApi.register({ email, password })
-      const res = await authApi.login({ email, password })
-      setAuthToken(res.data.access_token)
+      // Auto-login after registration
+      await authApi.login({ email, password })
       router.push('/')
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      setError('Registration failed')
+      setError(err.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -41,11 +41,11 @@ export default function RegisterPage() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>

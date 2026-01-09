@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { pagesApi, type Page, authApi, loadStoredToken, setAuthToken } from '@/lib/api'
+import { pagesApi, type Page, authApi } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreatePageDialog } from '@/components/CreatePageDialog'
@@ -16,12 +17,24 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    const token = loadStoredToken()
-    if (token) {
-      setIsAuthenticated(true)
-    }
+    checkAuth()
     loadPages()
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session)
+      if (session) {
+        loadPages()
+      }
+    })
+    
+    return () => subscription.unsubscribe()
   }, [])
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    setIsAuthenticated(!!session)
+  }
 
   const loadPages = async () => {
     try {
@@ -46,11 +59,10 @@ export default function Home() {
   const handleLogout = async () => {
     try {
       await authApi.logout()
+      setIsAuthenticated(false)
+      router.push('/login')
     } catch (e) {
       console.error(e)
-    } finally {
-      setAuthToken(undefined)
-      setIsAuthenticated(false)
     }
   }
 

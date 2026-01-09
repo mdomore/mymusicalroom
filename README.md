@@ -15,7 +15,8 @@ A web application for organizing guitar learning resources including videos, pho
 
 - **Backend**: FastAPI (Python)
 - **Frontend**: Next.js 14 with shadcn/ui
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (via shared Supabase instance)
+- **Authentication**: Supabase Auth
 - **Containerization**: Docker & Docker Compose
 
 ## Getting Started
@@ -33,9 +34,11 @@ docker-compose up -d
 ```
 
 3. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
+   - Frontend: http://localhost:3000/mymusicalroom
+   - Backend API: http://localhost:8005
+   - API Docs: http://localhost:8005/docs
+
+**Note:** Make sure the shared Supabase instance is running and the `supabase_default` network exists.
 
 ### Project Structure
 
@@ -49,11 +52,23 @@ mymusicalroom/
 
 ### Environment Variables
 
-Create a `.env` file in the root directory (see `.env.example` in backend):
+Create a `.env` file in the root directory with the following variables:
 
-- `DATABASE_URL`: PostgreSQL connection string
-- `RESOURCES_DIR`: Path to resources directory
-- `NEXT_PUBLIC_API_URL`: Backend API URL
+**Backend:**
+- `DATABASE_URL`: PostgreSQL connection string (e.g., `postgresql://postgres:password@supabase-db:5432/mymusicalroom`)
+- `SUPABASE_URL`: Supabase API URL (e.g., `http://supabase-kong:8000`)
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
+- `SUPABASE_ANON_KEY`: Supabase anonymous key
+- `SUPABASE_POSTGRES_PASSWORD`: PostgreSQL password for Supabase
+- `SUPABASE_JWT_SECRET`: JWT secret for token verification (usually same as service role key)
+- `RESOURCES_DIR`: Path to resources directory (default: `/app/resources`)
+
+**Frontend:**
+- `NEXT_PUBLIC_API_URL`: Backend API URL (e.g., `/mymusicalroom`)
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase API URL (e.g., `http://supabase-kong:8000`)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous key
+
+**Note:** The project connects to a shared Supabase instance via the `supabase_default` Docker network.
 
 ## Development
 

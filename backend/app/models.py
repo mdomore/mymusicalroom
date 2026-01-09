@@ -47,11 +47,6 @@ class Resource(Base):
     page = relationship("Page", back_populates="resources")
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+# User model removed - using Supabase auth.users table instead
+# Pages and Resources will reference auth.users.id (UUID) via user_id column
 

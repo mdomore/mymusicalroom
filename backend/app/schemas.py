@@ -66,16 +66,21 @@ class PageWithResources(PageResponse):
     resources: list[ResourceResponse] = []
 
 
-# Auth / Users
+# Auth / Users (using Supabase Auth)
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
 
+class UserLogin(BaseModel):
+    username: str  # Can be username or email
+    password: str
+
+
 class UserResponse(BaseModel):
-    id: int
+    id: str  # UUID string from Supabase
     email: EmailStr
-    created_at: datetime
+    created_at: Optional[str] = None  # ISO format string from Supabase
 
     class Config:
         from_attributes = True
@@ -83,7 +88,9 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
+    email: str | None = None  # Return email for frontend convenience
 
 
 class ResourceReorderRequest(BaseModel):
