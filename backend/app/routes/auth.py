@@ -1,17 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app import schemas
 from app.auth import get_current_user, supabase
+from app.config import EASYMEAL_DATABASE_URL
 from supabase import Client
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import os
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# Connect to easymeal database for username lookup
-EASYMEAL_DB_URL = os.getenv("EASYMEAL_DATABASE_URL", "postgresql://postgres:abbb4e639a90843bb672cd9a34a829e7@supabase-db:5432/easymeal")
-easymeal_engine = create_engine(EASYMEAL_DB_URL)
-EasymealSession = sessionmaker(bind=easymeal_engine)
+# Connect to easymeal database for username lookup (optional)
+# Only initialize if EASYMEAL_DATABASE_URL is provided
+easymeal_engine = None
+EasymealSession = None
+
+if EASYMEAL_DATABASE_URL:
+    easymeal_engine = create_engine(EASYMEAL_DATABASE_URL)
+    EasymealSession = sessionmaker(bind=easymeal_engine)
 
 
 @router.post("/register", response_model=schemas.UserResponse)
@@ -56,22 +60,25 @@ def login(payload: schemas.UserLogin):
         
         # Check if it looks like an email
         if "@" not in payload.username:
-            # It's a username, look it up in easymeal database
-            db = EasymealSession()
-            try:
-                result = db.execute(text("""
-                    SELECT email
-                    FROM users
-                    WHERE username = :username AND is_temporary = false
-                """), {"username": payload.username})
-                user_row = result.fetchone()
-                
-                if user_row and user_row[0]:
-                    email = user_row[0]
-            except Exception as e:
-                print(f"Error looking up username: {e}")
-            finally:
-                db.close()
+            # It's a username, look it up in easymeal database (if available)
+            if EasymealSession:
+                db = EasymealSession()
+                try:
+                    result = db.execute(text("""
+                        SELECT email
+                        FROM users
+                        WHERE username = :username AND is_temporary = false
+                    """), {"username": payload.username})
+                    user_row = result.fetchone()
+                    
+                    if user_row and user_row[0]:
+                        email = user_row[0]
+                except Exception as e:
+                    print(f"Error looking up username: {e}")
+                finally:
+                    db.close()
+            # If EASYMEAL_DATABASE_URL is not configured, username lookup is not available
+            # In this case, we'll try the username as email (may fail, but that's expected)
         
         # Login with Supabase Auth using email
         response = supabase.auth.sign_in_with_password({

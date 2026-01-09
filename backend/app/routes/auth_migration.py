@@ -7,15 +7,23 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.auth import supabase
+from app.config import get_required_env
 import bcrypt
-import os
 
 router = APIRouter(prefix="/api/auth/migrate", tags=["auth-migration"])
 
-# Connect to easymeal database
-EASYMEAL_DB_URL = os.getenv("EASYMEAL_DATABASE_URL", "postgresql://postgres:abbb4e639a90843bb672cd9a34a829e7@supabase-db:5432/easymeal")
-easymeal_engine = create_engine(EASYMEAL_DB_URL)
-EasymealSession = sessionmaker(bind=easymeal_engine)
+# Connect to easymeal database (required for migration endpoint)
+try:
+    EASYMEAL_DB_URL = get_required_env(
+        "EASYMEAL_DATABASE_URL",
+        description="Database URL for easymeal database (required for password migration)"
+    )
+    easymeal_engine = create_engine(EASYMEAL_DB_URL)
+    EasymealSession = sessionmaker(bind=easymeal_engine)
+except ValueError:
+    # If EASYMEAL_DATABASE_URL is not set, migration endpoint will not work
+    easymeal_engine = None
+    EasymealSession = None
 
 
 class MigrateRequest(BaseModel):
@@ -29,6 +37,12 @@ async def sync_password(request: MigrateRequest):
     Sync password from easymeal to Supabase Auth.
     Verifies easymeal credentials and sets the same password in Supabase.
     """
+    if not EasymealSession:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Easymeal database connection not configured. EASYMEAL_DATABASE_URL environment variable is required."
+        )
+    
     try:
         # Verify credentials against easymeal database
         db = EasymealSession()
