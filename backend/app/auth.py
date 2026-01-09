@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
+from app.security_logging import log_authentication_failure
 import os
 import jwt
 
@@ -40,6 +41,7 @@ async def get_current_user(
     token = _get_token_from_request(request)
     
     if not token:
+        log_authentication_failure(request, "No token provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
@@ -61,6 +63,7 @@ async def get_current_user(
         email = decoded.get("email")
         
         if not user_id:
+            log_authentication_failure(request, "Token missing user ID")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
@@ -72,20 +75,21 @@ async def get_current_user(
             "email": email or "",
         }
     except jwt.ExpiredSignatureError:
+        log_authentication_failure(request, "Token expired")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except jwt.InvalidTokenError as e:
-        print(f"Invalid token error: {e}")
+        log_authentication_failure(request, f"Invalid token: {type(e).__name__}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
-        print(f"Auth error: {e}")
+        log_authentication_failure(request, f"Authentication error: {type(e).__name__}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

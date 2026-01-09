@@ -5,6 +5,7 @@ Implements sliding window rate limiting per IP address.
 from fastapi import Request, HTTPException, status, Depends
 from collections import defaultdict
 import time
+from app.security_logging import log_rate_limit_exceeded
 
 
 # Rate limit storage: {ip: [(timestamp, endpoint), ...]}
@@ -78,8 +79,8 @@ def rate_limit_dependency(endpoint_name: str):
         client_ip = get_client_ip(request)
         
         if not check_rate_limit(client_ip, endpoint_name):
-            # Log rate limit violation (simple print for now, can be enhanced later)
-            print(f"Rate limit exceeded: IP={client_ip}, endpoint={endpoint_name}")
+            # Log rate limit violation
+            log_rate_limit_exceeded(request, endpoint_name)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"Too many requests. Please try again in {RATE_LIMIT_WINDOW} seconds.",

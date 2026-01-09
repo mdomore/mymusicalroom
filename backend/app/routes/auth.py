@@ -4,6 +4,11 @@ from app.auth import get_current_user, supabase
 from app.config import EASYMEAL_DATABASE_URL
 from app.rate_limit import rate_limit_dependency
 from app.error_handler import create_safe_http_exception
+from app.security_logging import (
+    log_failed_login, log_successful_login,
+    log_failed_registration, log_successful_registration,
+    log_rate_limit_exceeded
+)
 from supabase import Client
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -34,11 +39,13 @@ def register(
         })
         
         if response.user is None:
+            log_failed_registration(request, payload.email, "User creation failed")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Registration failed"
             )
         
+        log_successful_registration(request, payload.email)
         return {
             "id": response.user.id,
             "email": response.user.email,
@@ -49,11 +56,13 @@ def register(
     except Exception as e:
         error_msg = str(e).lower()
         if "already registered" in error_msg or "already exists" in error_msg:
+            log_failed_registration(request, payload.email, "Email already registered")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
         # Use safe error handler to prevent information leakage
+        log_failed_registration(request, payload.email, "Registration error")
         raise create_safe_http_exception(
             status_code=status.HTTP_400_BAD_REQUEST,
             generic_message="Registration failed",
@@ -103,11 +112,13 @@ def login(
         })
         
         if not response.session or not response.session.access_token:
+            log_failed_login(request, payload.username, "Invalid credentials")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
             )
         
+        log_successful_login(request, email)
         return {
             "access_token": response.session.access_token,
             "refresh_token": response.session.refresh_token,
@@ -118,6 +129,7 @@ def login(
         raise
     except Exception as e:
         # Use safe error handler to prevent information leakage
+        log_failed_login(request, payload.username, "Login error")
         raise create_safe_http_exception(
             status_code=status.HTTP_401_UNAUTHORIZED,
             generic_message="Invalid credentials",
