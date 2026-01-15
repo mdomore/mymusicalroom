@@ -72,13 +72,6 @@ class ResourceBase(BaseModel):
         if v is None:
             return None
         return validate_url(v)
-    
-    @field_validator('file_path')
-    @classmethod
-    def validate_file_path(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return None
-        return sanitize_filename(v)
 
 
 class ResourceCreate(ResourceBase):

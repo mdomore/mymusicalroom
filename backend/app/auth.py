@@ -22,6 +22,12 @@ def _get_token_from_request(request: Request) -> Optional[str]:
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.lower().startswith("bearer "):
         return auth_header.split(" ", 1)[1]
+    
+    # Check for query param (for file access from img/iframe tags)
+    query_token = request.query_params.get("token")
+    if query_token:
+        return query_token
+
     # Fallback to cookie (Supabase uses sb-<project-ref>-auth-token)
     cookie_token = request.cookies.get("sb-access-token")
     if cookie_token:

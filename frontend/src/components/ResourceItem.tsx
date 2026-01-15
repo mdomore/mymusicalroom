@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, ChevronDown, ChevronUp, Trash2, Edit } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { type Resource, resourcesApi } from "@/lib/api"
+import { type Resource, resourcesApi, getAuthToken } from "@/lib/api"
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,13 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
   const [title, setTitle] = useState(resource.title)
   const [description, setDescription] = useState(resource.description || "")
   const [loading, setLoading] = useState(false)
+  const [authToken, setAuthToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getAuthToken().then(setAuthToken)
+    }
+  }, [isAuthenticated])
 
   const {
     attributes,
@@ -56,7 +63,9 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
     opacity: isDragging ? 0.5 : 1,
   }
 
-  const handleToggleExpand = async () => {
+  const handleToggleExpand = async (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation()
+    e?.preventDefault()
     const newExpanded = !isExpanded
     setIsExpanded(newExpanded)
     try {
@@ -139,7 +148,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
       )
     } else if (resource.file_path) {
       // Local file
-      const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/resources/file/${resource.file_path}`
+      const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/resources/file/${resource.file_path}${authToken ? `?token=${authToken}` : ''}`
       const isPdf = resource.file_path.toLowerCase().endsWith(".pdf")
 
       if (resource.resource_type === "video") {
@@ -224,7 +233,11 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
                 <div className="flex-1 min-w-0 pr-2">
                   <CardTitle
                     className={`${isAuthenticated ? "cursor-pointer hover:text-primary" : ""} text-base sm:text-lg font-semibold break-words leading-tight`}
-                    onClick={isAuthenticated ? handleToggleExpand : undefined}
+                    onClick={isAuthenticated ? (e) => {
+                      e.stopPropagation()
+                      handleToggleExpand(e)
+                    } : undefined}
+                    style={isAuthenticated ? { touchAction: 'manipulation' } : undefined}
                     title={resource.title}
                   >
                     {resource.title}
@@ -241,6 +254,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
                     size="icon"
                     onClick={handleToggleExpand}
                     className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                    style={{ touchAction: 'manipulation' }}
                     aria-label={isExpanded ? "Collapse" : "Expand"}
                   >
                     {isExpanded ? (
@@ -254,12 +268,14 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation()
                           setTitle(resource.title)
                           setDescription(resource.description || "")
                           setEditDialogOpen(true)
                         }}
                         className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                        style={{ touchAction: 'manipulation' }}
                         aria-label="Edit resource"
                       >
                         <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -267,8 +283,12 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={handleDelete}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete()
+                        }}
                         className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                        style={{ touchAction: 'manipulation' }}
                         aria-label="Delete resource"
                       >
                         <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />

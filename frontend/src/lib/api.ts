@@ -30,6 +30,9 @@ api.interceptors.request.use(
     const token = await getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // Add CSRF token for state-changing requests
+      // The backend simply requires the presence of this header for authenticated requests
+      config.headers['X-CSRF-Token'] = '1';
     }
     return config;
   },
