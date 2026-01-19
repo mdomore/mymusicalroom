@@ -107,7 +107,7 @@ export function ResourceItem({ resource, pageId, onUpdated, onDeleted, isAuthent
   const renderResourceContent = () => {
     if (resource.external_url) {
       // YouTube or other external video
-      if (resource.resource_type === "video" && resource.external_url.includes("youtube.com")) {
+      if (resource.resource_type === "video" && (resource.external_url.includes("youtube.com") || resource.external_url.includes("youtu.be"))) {
         let videoId: string | undefined | null
         
         if (resource.external_url.includes("youtu.be")) {
