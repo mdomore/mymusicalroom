@@ -3,6 +3,11 @@ services:
 
   backend:
     build: ./backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./backend:/app
       - ./resources:/app/resources
@@ -26,6 +31,11 @@ services:
 
   frontend:
     build: ./frontend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./frontend:/app
       - /app/node_modules
